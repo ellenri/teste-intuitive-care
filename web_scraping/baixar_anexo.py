@@ -1,5 +1,7 @@
 import multiprocessing
 import os
+from datetime import datetime
+
 import requests
 from urllib.parse import urljoin
 
@@ -34,3 +36,47 @@ def baixar_anexos(url, diretorio_anexos):
         pool.starmap(baixar_anexo, tarefas)
 
     return anexos_baixados
+
+def baixar_demonstracoes_contabeis(url_base, diretorio_download):
+    ano_atual = datetime.now().year
+    anos = [ano_atual - 2, ano_atual - 1]  # Últimos 2 anos
+
+    # Verificar quais anos existem no repositório
+    anos_existentes = []
+    for ano in anos:
+        url_ano = urljoin(url_base, str(ano) + '/')
+        try:
+            response = requests.get(url_ano)
+            response.raise_for_status()
+            anos_existentes.append(ano)
+        except requests.exceptions.HTTPError:
+            print(f"Diretório {ano} não encontrado. Pulando.")
+
+    for ano in anos_existentes:
+        url_ano = urljoin(url_base, str(ano) + '/')
+        response = requests.get(url_ano)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.content, 'html.parser')
+        links_arquivos = soup.find_all('a', href=lambda href: href and (href.endswith('.zip') or href.endswith('.csv')))
+
+        for link in links_arquivos:
+            href = link['href']
+            url_arquivo = urljoin(url_ano, href)
+            nome_arquivo = os.path.join(diretorio_download, os.path.basename(href))
+
+            try:
+                baixar_anexo(url_arquivo, nome_arquivo)
+            except requests.exceptions.RequestException as e:
+                print(f"Erro ao baixar {url_arquivo}: {e}")\
+
+
+def baixar_relatorio_cadop(url_operadoras_ativas_ans, diretorio_download):
+    """Baixa o arquivo Relatorio_cadop.csv."""
+    url_arquivo = urljoin(url_operadoras_ativas_ans, 'Relatorio_cadop.csv')
+    nome_arquivo = os.path.join(diretorio_download, 'Relatorio_cadop.csv')
+
+    try:
+        baixar_anexo(url_arquivo, nome_arquivo)
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao baixar {url_arquivo}: {e}")
