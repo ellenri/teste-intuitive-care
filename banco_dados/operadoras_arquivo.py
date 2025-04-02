@@ -1,17 +1,16 @@
-import itertools
-
-import csv
-from io import StringIO
+import pandas as pd
+import numpy as np
 import psycopg2
+import logging
+import os
+from dotenv import load_dotenv
 
-def add_empty_strings_to_array(data, expected_length):
-    """Adiciona strings vazias a um array para atingir o comprimento esperado."""
-    while len(data) < expected_length:
-        data.append("")
-    return data
+# Configuração do logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def importar_dados_csv_para_postgres(conn, caminho_arquivo_csv, nome_tabela):
-    """Importa dados de um arquivo CSV para uma tabela PostgreSQL."""
+
+def importar_dados_csv_para_postgres_pandas(conn, caminho_arquivo_csv, nome_tabela):
+    """Importa dados de um arquivo CSV para uma tabela PostgreSQL usando pandas."""
 
     cursor = conn.cursor()
 
@@ -24,34 +23,45 @@ def importar_dados_csv_para_postgres(conn, caminho_arquivo_csv, nome_tabela):
         conn.commit()
         print("Tabela 'operadoras' criada com sucesso.")
 
-        with open(caminho_arquivo_csv, 'r', encoding='utf-8') as arquivo_csv:
-            leitor_csv = csv.reader(arquivo_csv)
-            cabecalho = next(leitor_csv)  # Lê o cabeçalho do arquivo CSV
-            colunas = cabecalho[0].replace(';', ',').lower()
+        # Ler o arquivo CSV usando pandas
+        df = pd.read_csv(caminho_arquivo_csv, sep=';', encoding='utf-8')
 
-            placeholders = ', '.join(['%s'] * len(colunas.split(',')))
-            query_insercao = f"INSERT INTO {nome_tabela} ({colunas}) VALUES ({placeholders})"
+        # Converter nomes das colunas para minúsculas e remover espaços extras
+        df.columns = [col.lower().strip() for col in df.columns]
 
-            # Insere os dados linha por linha
-            for linha in leitor_csv:
-                csv_string = "".join(linha)
+        # Criar a query de inserção com base nos nomes das colunas
+        colunas = ', '.join(df.columns)
+        placeholders = ', '.join(['%s'] * len(df.columns))
+        query_insercao = f"INSERT INTO {nome_tabela} ({colunas}) VALUES ({placeholders})"
 
-                reader = csv.reader(StringIO(csv_string), delimiter=';', quotechar='"')
-                linha_corrigida = next(reader)
-                print(len(linha), linha)
-                print(linha_corrigida)
-                print("length:", len(linha_corrigida))
+        # Converter valores NaN para None (NULL em PostgreSQL)
+        df = df.where(pd.notnull(df), None)
+        df = df.replace({np.nan: None})
 
-                cursor.execute(query_insercao, linha_corrigida)
+        # Converter a coluna para datetime, tratando erros e NaT
+        df['data_registro_ans'] = pd.to_datetime(df['data_registro_ans'], errors='coerce')
+        df['data_registro_ans'] = df['data_registro_ans'].replace({pd.NaT: None})
+
+        # Inserir os dados linha por linha
+        for _, row in df.iterrows():
+            try:
+
+                cursor.execute(query_insercao, tuple(row))
+                # else:
+                #     print(f"Aviso: CNPJ duplicado encontrado: {row['cnpj']}")
+            except psycopg2.Error as e:
+                logging.error(f"Erro ao inserir dados: {e}")
+                print(cursor.query)
+                # print(f"Erro ao inserir linha: {row}")
+                print(f"Erro: {e}")
 
         conn.commit()
         print(f"Dados importados com sucesso para a tabela {nome_tabela}.")
 
-    except (psycopg2.Error, FileNotFoundError) as e:
+    except (psycopg2.Error, FileNotFoundError, pd.errors.ParserError) as e:
         conn.rollback()
         print(f"Erro ao importar dados: {e}")
 
     finally:
         cursor.close()
-
 
