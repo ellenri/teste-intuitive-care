@@ -73,8 +73,8 @@ def baixar_demonstracoes_contabeis(url_base, diretorio_download):
 
 def baixar_relatorio_cadop(url_operadoras_ativas_ans, diretorio_download):
     """Baixa o arquivo Relatorio_cadop.csv."""
-    url_arquivo = urljoin(url_operadoras_ativas_ans, 'Relatorio_cadop.csv')
-    nome_arquivo = os.path.join(diretorio_download, 'Relatorio_cadop.csv')
+    url_arquivo = urljoin(url_operadoras_ativas_ans, 'relatorio_cadop.csv')
+    nome_arquivo = os.path.join(diretorio_download, 'relatorio_cadop.csv')
 
     try:
         baixar_anexo(url_arquivo, nome_arquivo)

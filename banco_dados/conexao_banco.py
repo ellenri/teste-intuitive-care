@@ -1,9 +1,12 @@
+import glob
+
 from dotenv import load_dotenv
 import os
 
+
 import psycopg2
 
-from banco_dados.operadoras_arquivo import executar_queries_operadoras_arquivo
+from banco_dados.operadoras_arquivo import importar_dados_csv_para_postgres
 
 load_dotenv()
 
@@ -14,6 +17,12 @@ def conectar_banco():
     db_user = os.environ.get('POSTGRES_USER')
     db_password = os.environ.get('POSTGRES_PASSWORD')
     db_name = os.environ.get('POSTGRES_DB')
+    diretorio_arquivo_csv = os.path.join("output", "operadoras_ativas_ans")
+    nome_tabela = 'operadoras'
+    caminho_arquivo_csv = os.path.abspath(os.path.join(diretorio_arquivo_csv, 'relatorio_cadop.csv'))
+    print(f"Caminho absoluto do arquivo CSV: {caminho_arquivo_csv}")
+
+
 
     print(db_host)
     print(db_password)
@@ -35,7 +44,7 @@ def conectar_banco():
         print("Conexão com o banco de dados estabelecida com sucesso.")
 
         # Chamar a função para executar as queries
-        executar_queries_operadoras_arquivo(conn)
+        importar_dados_csv_para_postgres(conn, caminho_arquivo_csv, nome_tabela)
 
     except psycopg2.Error as e:
         print(f"Erro de conexão com o banco de dados: {e}")
