@@ -22,14 +22,9 @@ def conectar_banco():
     print(db_params)
 
     try:
-        # Estabelecer conexão com o banco de dados
         conn = psycopg2.connect(**db_params)
         print("Conexão com o banco de dados estabelecida com sucesso.")
         return conn
     except psycopg2.Error as e:
         print(f"Erro de conexão com o banco de dados: {e}")
 
-    # finally:
-    #     if 'conn' in locals() and conn:
-    #         conn.close()
-    #         print("Conexão com o banco de dados fechada.")
