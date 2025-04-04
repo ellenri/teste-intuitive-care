@@ -11,7 +11,7 @@ from constants import output_diretorio
 diretorio_anexos = output_diretorio()
 
 
-CSV_FILE_PATH = os.path.join("..",diretorio_anexos,"operadoras_ativas_ans", "Relatorio_cadop.csv" )  # <<<--- COLOQUE O NOME DO SEU ARQUIVO CSV AQUI
+CSV_FILE_PATH = os.path.join("..",diretorio_anexos,"operadoras_ativas_ans", "Relatorio_cadop.csv" )
 ITEMS_PER_PAGE_DEFAULT = 20
 ENCODING = 'utf-8'
 

@@ -48,6 +48,24 @@ O PostgreSQL será acessível na porta padrão 5432 com as credenciais definidas
 - Python 3.6+
 - Bibliotecas listadas em `requirements.txt`
 
+### Coleção Postman
+
+- **Arquivo de Coleção**: Disponível no diretório `colecao_postman` do projeto
+- **Endpoints Configurados**: Todos os endpoints da API estão pré-configurados para teste rápido
+
+
+### Como usar a coleção
+
+1. Importe o arquivo de coleção no Postman
+2. Ajuste a variável de ambiente `base_url` se necessário
+3. Execute as requisições para testar os endpoints disponíveis
+
+A coleção inclui exemplos de:
+- Consulta de dados paginados
+- Busca com diferentes parâmetros
+- Visualização de detalhes de operadoras específicas
+
+
 ### Executando os Módulos
 1. **Web scraping e transformação de dados**:
 ```

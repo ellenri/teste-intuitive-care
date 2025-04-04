@@ -12,7 +12,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:5000/search?query=pinto",
+					"raw": "http://127.0.0.1:5000/data?page=2&per_page=60",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -22,12 +22,16 @@
 					],
 					"port": "5000",
 					"path": [
-						"search"
+						"data"
 					],
 					"query": [
 						{
-							"key": "query",
-							"value": "pinto"
+							"key": "page",
+							"value": "2"
+						},
+						{
+							"key": "per_page",
+							"value": "60"
 						}
 					]
 				}
@@ -37,10 +41,13 @@
 		{
 			"name": "query",
 			"request": {
+				"auth": {
+					"type": "noauth"
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://127.0.0.1:5000/search?query=pinto",
+					"raw": "http://127.0.0.1:5000/search?query=campinas",
 					"protocol": "http",
 					"host": [
 						"127",
@@ -55,7 +62,7 @@
 					"query": [
 						{
 							"key": "query",
-							"value": "pinto"
+							"value": "campinas"
 						}
 					]
 				}
