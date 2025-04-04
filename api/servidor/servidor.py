@@ -19,41 +19,6 @@ print(CSV_FILE_PATH)
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})  # Habilita CORS para todas as rotas e origens
 
-
-# # Cache para armazenar os dados do CSV na memória
-# DATA_CACHE = []
-# HEADERS = []
-#
-# def load_data_from_csv(file_path):
-#     """Carrega os dados do arquivo CSV para a memória."""
-#     global DATA_CACHE, HEADERS
-#     print(f"Tentando carregar dados de: {file_path}")
-#     try:
-#         data = []
-#         with open(file_path, mode='r', encoding=ENCODING, newline='') as infile:
-#             reader = csv.DictReader(infile)
-#             if not reader.fieldnames:
-#                  print("Erro: Cabeçalhos (fieldnames) não encontrados no CSV.")
-#                  HEADERS = []
-#                  DATA_CACHE = []
-#                  return False
-#             HEADERS = reader.fieldnames
-#             # Lê todas as linhas para a memória. Cuidado com arquivos gigantescos!
-#             DATA_CACHE = list(reader)
-#
-#         print(f"Sucesso: {len(DATA_CACHE)} linhas carregadas. Cabeçalhos: {HEADERS}")
-#         return True
-#     except FileNotFoundError:
-#         print(f"Erro Crítico: Arquivo CSV '{file_path}' não encontrado.")
-#         DATA_CACHE = []
-#         HEADERS = []
-#         return False
-#     except Exception as e:
-#         print(f"Erro Crítico ao ler o CSV: {e}")
-#         DATA_CACHE = []
-#         HEADERS = []
-#         return False
-
 def load_data_from_csv(file_path):
     """Carrega os dados do arquivo CSV para a memória."""
     try:

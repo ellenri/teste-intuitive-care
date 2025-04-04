@@ -50,8 +50,7 @@ export default defineComponent({
     }
   },
   emits: ['page-change', 'items-per-page-change', 'search', 'clear-search'],
-  setup(props, { emit }) {
-    // Pagination refs - using props as source of truth
+  setup(props, { emit }) {    
     const currentPage = computed({
       get: () => props.currentPage,
       set: (value) => emit('page-change', value)
@@ -62,63 +61,34 @@ export default defineComponent({
       set: (value) => emit('items-per-page-change', value)
     });
     
-    // Sorting
+    // Ordenar
     const sortBy = ref('');
     const sortDirection = ref('asc');
     
-    // Filters
-    const filters = ref<{ [key: string]: string }>({});
-    
-    // Search
+    // Buscar
     const searchQuery = ref(props.searchQuery);
     
-    // Watch for changes in the search query prop
+    // Watch para mudanças na propriedade de consulta de pesquisa
     watch(() => props.searchQuery, (newValue) => {
       searchQuery.value = newValue;
     });
     
-    // Watch for changes in the local search query
+    // Watch para mudanças na propriedade de consulta de pesquisa
     let searchTimeout: number | null = null;
     watch(searchQuery, (newValue) => {
-      // Clear previous timeout
       if (searchTimeout) {
         clearTimeout(searchTimeout);
       }
-      
-      // Set a new timeout to avoid sending too many requests
+         
       searchTimeout = window.setTimeout(() => {
         emit('search', newValue);
-      }, 500); // 500ms debounce
+      }, 500); 
     });
     
-    // Active Filters Count
-    const activeFiltersCount = computed(() => {
-      return Object.values(filters.value).filter(val => val && val.trim() !== '').length;
-    });
-    
-    // Selected columns for filtering
-    const selectedColumns = ref<string[]>([]);
-    const toggleColumnSelection = (key: string) => {
-      const index = selectedColumns.value.indexOf(key);
-      if (index === -1) {
-        selectedColumns.value.push(key);
-      } else {
-        selectedColumns.value.splice(index, 1);
-      }
-    };
-    
-    // Use the data directly since filtering is handled by the server
-    const filteredData = computed(() => {
-      return props.data;
-    });
-    
-    // Use the data directly since pagination is handled by the server
-    // Ensure it always returns an array to prevent template errors
     const paginatedData = computed(() => {
       return props.data || [];
     });
     
-    // Get status badge class based on status value
     const getStatusClass = (status: string) => {
       const statusLower = status.toLowerCase();
       if (statusLower === 'completed') return 'status-completed';
@@ -127,8 +97,7 @@ export default defineComponent({
       if (statusLower === 'cancelled') return 'status-cancelled';
       return 'status-default';
     };
-    
-    // Handle sort change
+      
     const handleSort = (key: string) => {
       if (sortBy.value === key) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
@@ -137,32 +106,16 @@ export default defineComponent({
         sortDirection.value = 'asc';
       }
     };
-    
-    // Handle filter change
-    const handleFilter = (key: string, value: string) => {
-      filters.value = { ...filters.value, [key]: value };
-    };
-    
-    // Clear all filters
-    const clearFilters = () => {
-      filters.value = {};
-      searchQuery.value = '';
-      emit('clear-search');
-    };
-    
-    // Handle page change
+        
     const changePage = (page: number) => {
       currentPage.value = page;
     };
-    
-    // Handle items per page change
+     
     const changeItemsPerPage = (items: number) => {
-      itemsPerPage.value = items;
-      // Reset to first page when changing items per page
+      itemsPerPage.value = items;    
       currentPage.value = 1;
     };
-    
-    // Format date
+      
     const formatDate = (dateString: string) => {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -174,19 +127,12 @@ export default defineComponent({
       itemsPerPage,
       sortBy,
       sortDirection,
-      filters,
       searchQuery,
-      selectedColumns,
-      activeFiltersCount,
-      filteredData,
       paginatedData,
       totalPages: computed(() => props.totalPages),
       totalItems: computed(() => props.totalItems),
-      toggleColumnSelection,
       getStatusClass,
       handleSort,
-      handleFilter,
-      clearFilters,
       changePage,
       changeItemsPerPage,
       formatDate
@@ -196,14 +142,13 @@ export default defineComponent({
 </script>
 
 <template>
-  <div class="table-container">
-    <!-- Header Controls -->
+  <div class="table-container"> 
     <div class="table-controls">
       <div class="search-container">
         <input 
           type="text" 
           v-model="searchQuery" 
-          placeholder="Busqueda..." 
+          placeholder="Buscar..." 
           class="search-input"
         />
         <div class="search-icon">
@@ -213,39 +158,8 @@ export default defineComponent({
           </svg>
         </div>
       </div>
-      
-      <div class="filter-toggle">
-        <button class="filter-button" @click="selectedColumns = selectedColumns.length ? [] : columns.map(col => col.key)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-          </svg>
-          Filters
-          <span v-if="activeFiltersCount > 0" class="filter-badge">{{ activeFiltersCount }}</span>
-        </button>
-        
-        <button v-if="activeFiltersCount > 0" class="clear-button" @click="clearFilters">
-          Clear All
-        </button>
-      </div>
     </div>
-    
-    <!-- Filter Panel -->
-    <div class="filters-panel" v-if="selectedColumns.length > 0">
-      <div class="filters-container">
-        <div v-for="column in columns.filter(col => selectedColumns.includes(col.key))" :key="column.key" class="filter-item">
-          <label>{{ column.label }}</label>
-          <input 
-            type="text" 
-            v-model="filters[column.key]"
-            @input="handleFilter(column.key, filters[column.key] || '')"
-            :placeholder="`Filter by ${column.label.toLowerCase()}`"
-            class="filter-input"
-          />
-        </div>
-      </div>
-    </div>
-    
-    <!-- Table -->
+       
     <div class="table-wrapper">
       <table class="data-table">
         <thead>
@@ -298,11 +212,10 @@ export default defineComponent({
         </tbody>
       </table>
     </div>
-    
-    <!-- Pagination -->
+       
     <div class="pagination-container">
       <div class="items-per-page">
-        <span>Show:</span>
+        <span>Mostrar:</span>
         <select v-model="itemsPerPage">
           <option v-for="option in itemsPerPageOptions" :key="option" :value="option">
             {{ option }}
@@ -311,7 +224,7 @@ export default defineComponent({
       </div>
       
       <div class="page-info">
-        Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} entries
+        Mostrando {{ ((currentPage - 1) * itemsPerPage) + 1 }} a {{ Math.min(currentPage * itemsPerPage, totalItems) }} de {{ totalItems }} entradas
       </div>
       
       <div class="pagination-controls">
@@ -334,7 +247,7 @@ export default defineComponent({
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
-          Prev
+          Anterior
         </button>
         
         <div class="page-buttons">
@@ -355,7 +268,7 @@ export default defineComponent({
           @click="changePage(currentPage + 1)" 
           :disabled="currentPage === totalPages || totalPages === 0"
         >
-          Next
+          Próximo
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
@@ -424,99 +337,6 @@ export default defineComponent({
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 145, 189, 0.1);
   background-color: #ffffff;
-}
-
-.filter-toggle {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.filter-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 15px;
-  background-color: #f9fbfd;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  color: #4a5568;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.filter-button:hover {
-  background-color: #edf2f7;
-}
-
-.filter-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  background-color: #0091bd;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.clear-button {
-  padding: 10px 15px;
-  background-color: transparent;
-  border: none;
-  font-size: 14px;
-  color: #0091bd;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.clear-button:hover {
-  text-decoration: underline;
-}
-
-.filters-panel {
-  padding: 15px 20px;
-  background-color: #f9fbfd;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.filters-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-}
-
-.filter-item {
-  min-width: 200px;
-  flex: 1;
-}
-
-.filter-item label {
-  display: block;
-  margin-bottom: 5px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #718096;
-}
-
-.filter-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: all 0.2s;
-  background-color: #ffffff;
-}
-
-.filter-input:focus {
-  border-color: #0091bd;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 145, 189, 0.1);
 }
 
 .table-wrapper {

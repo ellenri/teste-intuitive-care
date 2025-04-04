@@ -1,29 +1,33 @@
-# client
+# Cliente API Teste Intuitive Care
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend para consulta de dados da API de Registro ANS.
 
-## Recommended IDE Setup
+## Configuração do Projeto
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Certifique-se de ter o [Node.js](https://nodejs.org/) (que inclui o npm) instalado.
 
-## Customize configuration
+1.  Navegue até o diretório `client_api` no seu terminal.
+2.  Instale as dependências:
+    ```sh
+    npm install
+    ```
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Executando em Desenvolvimento
 
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
+Para iniciar o servidor de desenvolvimento com hot-reload:
 
 ```sh
 npm run dev
 ```
 
-### Compile and Minify for Production
+A aplicação estará disponível em `http://localhost:5173` (ou outra porta indicada pelo Vite).
+
+## Build para Produção
+
+Para compilar e minificar para produção:
 
 ```sh
 npm run build
 ```
+
+Os arquivos otimizados estarão na pasta `dist`.

@@ -15,13 +15,13 @@ import DemoTable from './components/TableRegistroANS.vue'
     </main>
 
     <footer>
-      <p>© 2025 Intuitive Care. Teste Ellen Ribeiro Borges.</p>
+      <p>© 2025 Intuitive Care. Teste Ellen Ribeiro</p>
     </footer>
   </div>
 </template>
 
 <style>
-/* Global styles */
+/*  estilo Global */
 :root {
   --primary-color: #0091bd;
   --secondary-color: #e6f7fb;
