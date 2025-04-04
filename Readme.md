@@ -10,8 +10,32 @@ Ele combina web scraping, processamento e transformação de dados e uma API RES
 - **Compactação**: Ferramentas para compactar arquivos extraídos e processados
 
 ### 2. Banco de Dados
+
 - **Operadoras Ativas**: Módulo para gerenciar dados das operadoras de saúde em atividade
 - **Demonstrações Contábeis**: Sistema para processar e armazenar dados financeiros das operadoras
+- **Conexão com Banco de Dados**: Utiliza PostgreSQL para armazenamento persistente dos dados processados
+- **Docker**: Arquivo Docker Compose disponível para configuração rápida do ambiente de banco de dados
+
+## Configuração do Ambiente com Docker
+
+O projeto inclui um arquivo Docker Compose para facilitar a configuração do ambiente de banco de dados:
+
+1. **Iniciar o banco de dados**:
+   ```
+   docker-compose up -d
+   ```
+
+2. **Verificar status do container**:
+   ```
+   docker-compose ps
+   ```
+
+3. **Parar os serviços**:
+   ```
+   docker-compose down
+   ```
+
+O PostgreSQL será acessível na porta padrão 5432 com as credenciais definidas no arquivo de configuração.
 
 ### 3. API RESTful
 - **Servidor Flask**: Interface para consulta dos dados processados
