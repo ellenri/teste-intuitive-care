@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
+import { defineComponent, ref, computed, watch } from 'vue';
 
 interface TableRow {
   id: number;
@@ -24,15 +24,43 @@ export default defineComponent({
       type: Array as () => TableRow[],
       required: true
     },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
+    itemsPerPage: {
+      type: Number,
+      default: 10
+    },
     itemsPerPageOptions: {
       type: Array as () => number[],
       default: () => [10, 25, 50]
+    },
+    totalItems: {
+      type: Number,
+      default: 0
+    },
+    totalPages: {
+      type: Number,
+      default: 0
+    },
+    searchQuery: {
+      type: String,
+      default: ''
     }
   },
-  setup(props) {
-    // Pagination
-    const currentPage = ref(1);
-    const itemsPerPage = ref(props.itemsPerPageOptions[0]);
+  emits: ['page-change', 'items-per-page-change', 'search', 'clear-search'],
+  setup(props, { emit }) {
+    // Pagination refs - using props as source of truth
+    const currentPage = computed({
+      get: () => props.currentPage,
+      set: (value) => emit('page-change', value)
+    });
+    
+    const itemsPerPage = computed({
+      get: () => props.itemsPerPage,
+      set: (value) => emit('items-per-page-change', value)
+    });
     
     // Sorting
     const sortBy = ref('');
@@ -42,7 +70,26 @@ export default defineComponent({
     const filters = ref<{ [key: string]: string }>({});
     
     // Search
-    const searchQuery = ref('');
+    const searchQuery = ref(props.searchQuery);
+    
+    // Watch for changes in the search query prop
+    watch(() => props.searchQuery, (newValue) => {
+      searchQuery.value = newValue;
+    });
+    
+    // Watch for changes in the local search query
+    let searchTimeout: number | null = null;
+    watch(searchQuery, (newValue) => {
+      // Clear previous timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      
+      // Set a new timeout to avoid sending too many requests
+      searchTimeout = window.setTimeout(() => {
+        emit('search', newValue);
+      }, 500); // 500ms debounce
+    });
     
     // Active Filters Count
     const activeFiltersCount = computed(() => {
@@ -60,56 +107,16 @@ export default defineComponent({
       }
     };
     
-    // Compute filtered data
+    // Use the data directly since filtering is handled by the server
     const filteredData = computed(() => {
-      let result = [...props.data];
-      
-      // Apply search filter
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        result = result.filter(row => {
-          return Object.values(row).some(value => 
-            String(value).toLowerCase().includes(query)
-          );
-        });
-      }
-      
-      // Apply column filters
-      Object.entries(filters.value).forEach(([key, value]) => {
-        if (value) {
-          result = result.filter(row => 
-            String(row[key]).toLowerCase().includes(value.toLowerCase())
-          );
-        }
-      });
-      
-      // Apply sorting
-      if (sortBy.value) {
-        result.sort((a, b) => {
-          const aValue = a[sortBy.value];
-          const bValue = b[sortBy.value];
-          
-          if (aValue === bValue) return 0;
-          
-          const comparison = aValue > bValue ? 1 : -1;
-          return sortDirection.value === 'asc' ? comparison : -comparison;
-        });
-      }
-      
-      return result;
+      return props.data;
     });
     
-    // Compute paginated data
+    // Use the data directly since pagination is handled by the server
+    // Ensure it always returns an array to prevent template errors
     const paginatedData = computed(() => {
-      const start = (currentPage.value - 1) * itemsPerPage.value;
-      const end = start + itemsPerPage.value;
-      return filteredData.value.slice(start, end);
+      return props.data || [];
     });
-    
-    // Compute total pages
-    const totalPages = computed(() => 
-      Math.ceil(filteredData.value.length / itemsPerPage.value)
-    );
     
     // Get status badge class based on status value
     const getStatusClass = (status: string) => {
@@ -140,6 +147,7 @@ export default defineComponent({
     const clearFilters = () => {
       filters.value = {};
       searchQuery.value = '';
+      emit('clear-search');
     };
     
     // Handle page change
@@ -150,13 +158,15 @@ export default defineComponent({
     // Handle items per page change
     const changeItemsPerPage = (items: number) => {
       itemsPerPage.value = items;
-      currentPage.value = 1; // Reset to first page
+      // Reset to first page when changing items per page
+      currentPage.value = 1;
     };
     
     // Format date
     const formatDate = (dateString: string) => {
-      const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
     };
     
     return {
@@ -166,23 +176,22 @@ export default defineComponent({
       sortDirection,
       filters,
       searchQuery,
-      activeFiltersCount,
       selectedColumns,
+      activeFiltersCount,
       filteredData,
       paginatedData,
-      totalPages,
+      totalPages: computed(() => props.totalPages),
+      totalItems: computed(() => props.totalItems),
+      toggleColumnSelection,
       getStatusClass,
       handleSort,
       handleFilter,
       clearFilters,
       changePage,
       changeItemsPerPage,
-      toggleColumnSelection,
       formatDate
     };
   }
-
-  
 });
 </script>
 
@@ -194,7 +203,7 @@ export default defineComponent({
         <input 
           type="text" 
           v-model="searchQuery" 
-          placeholder="Busca..." 
+          placeholder="Busqueda..." 
           class="search-input"
         />
         <div class="search-icon">
@@ -293,55 +302,75 @@ export default defineComponent({
     <!-- Pagination -->
     <div class="pagination-container">
       <div class="items-per-page">
-        <span>Mostrando</span>
-        <select v-model="itemsPerPage" @change="changeItemsPerPage(itemsPerPage)">
+        <span>Show:</span>
+        <select v-model="itemsPerPage">
           <option v-for="option in itemsPerPageOptions" :key="option" :value="option">
             {{ option }}
           </option>
         </select>
-        <span>entradas</span>
+      </div>
+      
+      <div class="page-info">
+        Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} entries
       </div>
       
       <div class="pagination-controls">
         <button 
-          @click="changePage(currentPage - 1)"
+          class="pagination-button" 
+          @click="changePage(1)" 
           :disabled="currentPage === 1"
-          class="pagination-button prev"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 18l-6-6 6-6"></path>
+            <polyline points="11 17 6 12 11 7"></polyline>
+            <polyline points="18 17 13 12 18 7"></polyline>
           </svg>
-          anterior
+        </button>
+        
+        <button 
+          class="pagination-button" 
+          @click="changePage(currentPage - 1)" 
+          :disabled="currentPage === 1"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          Prev
         </button>
         
         <div class="page-buttons">
           <button 
             v-for="page in totalPages" 
-            :key="page"
-            @click="changePage(page)"
+            :key="page" 
+            @click="changePage(page)" 
+            class="page-button" 
             :class="{ active: currentPage === page }"
-            class="page-button"
+            v-show="page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)"
           >
             {{ page }}
           </button>
         </div>
         
         <button 
-          @click="changePage(currentPage + 1)"
-          :disabled="currentPage === totalPages"
-          class="pagination-button next"
+          class="pagination-button" 
+          @click="changePage(currentPage + 1)" 
+          :disabled="currentPage === totalPages || totalPages === 0"
         >
-        próximo
+          Next
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18l6-6-6-6"></path>
+            <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
-      </div>
-      
-      <div class="page-info">
-        Mostrando {{ filteredData.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }} a 
-        {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 
-        de {{ filteredData.length }} entradas
+        
+        <button 
+          class="pagination-button" 
+          @click="changePage(totalPages)" 
+          :disabled="currentPage === totalPages || totalPages === 0"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="13 17 18 12 13 7"></polyline>
+            <polyline points="6 17 11 12 6 7"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -373,7 +402,7 @@ export default defineComponent({
 }
 
 .search-input {
-  width: 200%;
+  width: 100%;
   padding: 10px 15px 10px 40px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;

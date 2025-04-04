@@ -15,6 +15,7 @@ from web_scraping_transformacao_dados.baixar_anexo import baixar_anexo
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+
 diretorio_origem = os.path.join("../../../output/demonstracoes_contabeis")
 diretorio_destino = os.path.join("../../output", "demonstracoes_contabeis", "extraido")
 
